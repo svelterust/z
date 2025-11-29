@@ -3,7 +3,6 @@ use z::Result;
 
 enum Command {
     Compile,
-    Run,
 }
 
 impl std::str::FromStr for Command {
@@ -12,7 +11,6 @@ impl std::str::FromStr for Command {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "compile" => Ok(Command::Compile),
-            "run" => Ok(Command::Run),
             _ => Err(format!("Invalid command: {s}")),
         }
     }
@@ -66,7 +64,7 @@ fn main() -> Result<()> {
 
     // Parse file
     let input = std::fs::read_to_string(args.file)?;
-    let ast = z::parse::parse_ast(&input)?;
+    let ast = z::parse(&input)?;
     println!("Got AST: {ast:#?}");
 
     // QBE
