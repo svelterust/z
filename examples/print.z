@@ -1,4 +1,0 @@
-fn main() {
-    name := "Odd-Harald"
-    printf(name)
-}

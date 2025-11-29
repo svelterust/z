@@ -2,7 +2,7 @@ use z::Result;
 
 enum Command {
     Check,
-    Run,
+    Compile,
 }
 
 impl std::str::FromStr for Command {
@@ -11,7 +11,7 @@ impl std::str::FromStr for Command {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "check" => Ok(Command::Check),
-            "run" => Ok(Command::Run),
+            "compile" => Ok(Command::Compile),
             _ => Err(format!("Invalid command: {s}")),
         }
     }
@@ -52,7 +52,7 @@ fn main() -> Result<()> {
             let module = z::compile(&ast);
             print!("{module}");
         }
-        Command::Run => {
+        Command::Compile => {
             // Parse file
             let input = std::fs::read_to_string(&args.file)?;
             let ast = z::parse(&input)?;
@@ -77,7 +77,6 @@ fn main() -> Result<()> {
             std::process::Command::new("tcc")
                 .args([&format!("build/{name}.s"), "-o", name])
                 .status()?;
-            std::process::Command::new(format!("./{name}")).status()?;
         }
     }
     Ok(())

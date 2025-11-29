@@ -12,3 +12,11 @@ Welcome to Z! This project will be based on Rust, Zig and Go. Important goals ar
 It uses QBE as a backend compiler, and TinyCC for compiling.
 I hope we can achieve incremental compilation like in Zig with our own compiler backend.
 But that's just a dream.. for now.
+
+## Getting started
+
+```
+$ z compile examples/hello.z
+$ ./hello
+Hello, Z Lang!
+```

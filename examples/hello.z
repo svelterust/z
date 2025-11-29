@@ -1,0 +1,4 @@
+fn main() {
+    message := "Hello, Z Lang!\n"
+    printf(message)
+}
