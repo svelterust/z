@@ -25,6 +25,17 @@ pub enum Atom {
     Float(f64),
 }
 
+impl std::fmt::Display for Atom {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Atom::Symbol(name) => write!(f, "{name}"),
+            Atom::String(string) => write!(f, "\"{string}\""),
+            Atom::Number(number) => write!(f, "{number}"),
+            Atom::Float(float) => write!(f, "{float}"),
+        }
+    }
+}
+
 fn parse_name(input: &str) -> IResult<&str, String> {
     map(alpha1, str::to_string).parse(input)
 }
@@ -83,6 +94,33 @@ pub enum Node {
         args: Vec<Atom>,
         body: Vec<Statement>,
     },
+}
+
+impl std::fmt::Display for Statement {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Statement::Declare { name, value } => write!(f, "{name} := {value}"),
+            Statement::Call { name, args } => {
+                let arg_strs: Vec<String> = args.iter().map(|arg| arg.to_string()).collect();
+                write!(f, "{name}({})", arg_strs.join(", "))
+            }
+        }
+    }
+}
+
+impl std::fmt::Display for Node {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Node::Function { name, args, body } => {
+                let arg_strs = args.iter().map(|arg| arg.to_string()).collect::<Vec<_>>();
+                write!(f, "fn {name}({}) {{", arg_strs.join(", "))?;
+                for statement in body {
+                    write!(f, "\n    {statement}")?;
+                }
+                write!(f, "\n}}")
+            }
+        }
+    }
 }
 
 fn parse_function(input: &str) -> IResult<&str, Node> {

@@ -43,7 +43,9 @@ fn main() -> Result<()> {
         Command::Compile => {
             let input = std::fs::read_to_string(args.file)?;
             let ast = z::parse(&input)?;
-            println!("{ast:#?}");
+            for node in &ast {
+                println!("{node}\n");
+            }
             let module = z::compile(&ast);
             print!("{module}");
         }
