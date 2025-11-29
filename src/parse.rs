@@ -52,47 +52,48 @@ fn parse_atom(input: &str) -> IResult<&str, Atom> {
 }
 
 #[derive(Debug)]
-pub enum Stmt {
+pub enum Statement {
     Declare { name: String, value: Atom },
     Call { name: String, args: Vec<Atom> },
 }
 
-fn parse_declare(input: &str) -> IResult<&str, Stmt> {
+fn parse_declare(input: &str) -> IResult<&str, Statement> {
     let parser = separated_pair(parse_name, ws(tag(":=")), parse_atom);
-    map(parser, |(name, value)| Stmt::Declare { name, value }).parse(input)
+    map(parser, |(name, value)| Statement::Declare { name, value }).parse(input)
 }
 
-fn parse_call(input: &str) -> IResult<&str, Stmt> {
+fn parse_call(input: &str) -> IResult<&str, Statement> {
     let parse_args = delimited(
         tag("("),
         separated_list0(tag(","), ws(parse_atom)),
         tag(")"),
     );
     let parser = (parse_name, parse_args);
-    map(parser, |(name, args)| Stmt::Call { name, args }).parse(input)
+    map(parser, |(name, args)| Statement::Call { name, args }).parse(input)
 }
 
-fn parse_stmt(input: &str) -> IResult<&str, Stmt> {
+fn parse_statement(input: &str) -> IResult<&str, Statement> {
     alt((parse_declare, parse_call)).parse(input)
 }
 
-pub enum Ast {
+#[derive(Debug)]
+pub enum Node {
     Function {
         name: String,
         args: Vec<Atom>,
-        body: Vec<Stmt>,
+        body: Vec<Statement>,
     },
 }
 
-fn parse_function(input: &str) -> IResult<&str, Ast> {
+fn parse_function(input: &str) -> IResult<&str, Node> {
     let parse_args = delimited(
         tag("("),
         separated_list0(tag(","), ws(parse_atom)),
         tag(")"),
     );
-    let parse_body = delimited(tag("{"), many0(ws(parse_stmt)), tag("}"));
+    let parse_body = delimited(tag("{"), many0(ws(parse_statement)), tag("}"));
     let parser = preceded(tag("fn"), (ws(parse_name), parse_args, ws(parse_body)));
-    map(parser, |(name, args, body)| Ast::Function {
+    map(parser, |(name, args, body)| Node::Function {
         name,
         args,
         body,
@@ -100,12 +101,12 @@ fn parse_function(input: &str) -> IResult<&str, Ast> {
     .parse(input)
 }
 
-fn parse_ast(input: &str) -> IResult<&str, Ast> {
+fn parse_node(input: &str) -> IResult<&str, Node> {
     parse_function.parse(input)
 }
 
-pub fn parse(input: &str) -> crate::Result<Vec<Ast>> {
-    match many0(ws(parse_ast)).parse(input) {
+pub fn parse(input: &str) -> crate::Result<Vec<Node>> {
+    match many0(ws(parse_node)).parse(input) {
         Ok((_, ast)) => Ok(ast),
         Err(err) => Err(format!("Failed to parse file: {err}"))?,
     }
