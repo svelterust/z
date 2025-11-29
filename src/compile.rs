@@ -1,6 +1,18 @@
 use crate::{Atom, Statement, parse::Node};
 use qbe::{DataDef, DataItem, Function, Instr, Linkage, Module, Type, Value};
 
+fn atom_to_dataitem(atom: &Atom) -> Vec<(Type<'_>, DataItem)> {
+    match atom {
+        Atom::Symbol(_name) => todo!(),
+        Atom::String(string) => vec![
+            (Type::Byte, DataItem::Str(string.into())),
+            (Type::Byte, DataItem::Const(0)),
+        ],
+        Atom::Number(number) => vec![(Type::Word, DataItem::Const(*number))],
+        Atom::Float(_float) => todo!(),
+    }
+}
+
 pub fn compile(ast: &[Node]) -> Module<'_> {
     let mut module = Module::new();
     for expr in ast {
@@ -12,25 +24,21 @@ pub fn compile(ast: &[Node]) -> Module<'_> {
                 for statement in body {
                     match statement {
                         Statement::Declare { name, value } => {
-                            let items = match value {
-                                Atom::Symbol(_name) => todo!(),
-                                Atom::String(string) => vec![
-                                    (Type::Byte, DataItem::Str(string.into())),
-                                    (Type::Byte, DataItem::Const(0)),
-                                ],
-                                Atom::Number(_number) => todo!(),
-                                Atom::Float(_float) => todo!(),
-                            };
-                            let data = DataDef::new(Linkage::private(), name, None, items);
+                            let data = DataDef::new(
+                                Linkage::private(),
+                                name,
+                                None,
+                                atom_to_dataitem(value),
+                            );
                             module.add_data(data);
                         }
                         Statement::Call { name, args } => {
                             let items = args
-                                .into_iter()
+                                .iter()
                                 .map(|arg| match arg {
                                     Atom::Symbol(name) => (Type::Long, Value::Global(name.into())),
                                     Atom::String(_string) => todo!(),
-                                    Atom::Number(_number) => todo!(),
+                                    Atom::Number(number) => (Type::Word, Value::Const(*number)),
                                     Atom::Float(_float) => todo!(),
                                 })
                                 .collect::<Vec<_>>();

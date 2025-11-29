@@ -3,6 +3,7 @@ use z::Result;
 enum Command {
     Check,
     Compile,
+    Run,
 }
 
 impl std::str::FromStr for Command {
@@ -12,6 +13,7 @@ impl std::str::FromStr for Command {
         match s {
             "check" => Ok(Command::Check),
             "compile" => Ok(Command::Compile),
+            "run" => Ok(Command::Run),
             _ => Err(format!("Invalid command: {s}")),
         }
     }
@@ -33,6 +35,34 @@ impl Args {
     }
 }
 
+fn build(args: &Args) -> Result<String> {
+    // Build the project
+    let input = std::fs::read_to_string(&args.file)?;
+    let ast = z::parse(&input)?;
+    let module = z::compile(&ast);
+
+    // Write to disk
+    let name = args
+        .file
+        .file_stem()
+        .and_then(|it| it.to_str())
+        .ok_or_else(|| format!("Invalid file name: {}", args.file.display()))?;
+    let path = format!("build/{name}.ssa");
+    std::fs::write(&path, module.to_string())?;
+    let output = format!("build/{name}");
+
+    // Process with QBE, compile with TinyCC then run
+    // qbe -o {name}.s {name}.ssa
+    // tcc {name}.s -o {name}
+    std::process::Command::new("qbe")
+        .args(["-o", &format!("build/{name}.s"), &path])
+        .status()?;
+    std::process::Command::new("tcc")
+        .args([&format!("build/{name}.s"), "-o", &output])
+        .status()?;
+    Ok(output.to_string())
+}
+
 fn main() -> Result<()> {
     // Get args
     let Ok(args) = Args::new() else {
@@ -46,37 +76,16 @@ fn main() -> Result<()> {
             // Parse and output
             let input = std::fs::read_to_string(args.file)?;
             let ast = z::parse(&input)?;
-            for node in &ast {
-                println!("{node}\n");
-            }
+            println!("{ast:#?}\n");
             let module = z::compile(&ast);
             print!("{module}");
         }
         Command::Compile => {
-            // Parse file
-            let input = std::fs::read_to_string(&args.file)?;
-            let ast = z::parse(&input)?;
-            let module = z::compile(&ast);
-
-            // Write to disk
-            let name = args
-                .file
-                .file_stem()
-                .and_then(|it| it.to_str())
-                .ok_or_else(|| format!("Invalid file name: {}", args.file.display()))?;
-            let path = format!("build/{name}.ssa");
-            std::fs::write(&path, module.to_string())?;
-
-            // Process with QBE, compile with TinyCC then run
-            // qbe -o {name}.s {name}.ssa
-            // tcc {name}.s -o {name}
-            // ./{name}
-            std::process::Command::new("qbe")
-                .args(["-o", &format!("build/{name}.s"), &path])
-                .status()?;
-            std::process::Command::new("tcc")
-                .args([&format!("build/{name}.s"), "-o", name])
-                .status()?;
+            build(&args)?;
+        }
+        Command::Run => {
+            let path = build(&args)?;
+            std::process::Command::new(path).status()?;
         }
     }
     Ok(())

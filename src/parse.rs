@@ -3,7 +3,7 @@ use nom::{
     branch::alt,
     bytes::{complete::tag, take_until},
     character::complete::{alpha1, digit1, multispace0},
-    combinator::{map, opt, recognize},
+    combinator::map,
     error::ParseError,
     multi::{many0, separated_list0},
     number::complete::double,
@@ -21,19 +21,8 @@ where
 pub enum Atom {
     Symbol(String),
     String(String),
-    Number(i64),
+    Number(u64),
     Float(f64),
-}
-
-impl std::fmt::Display for Atom {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Atom::Symbol(name) => write!(f, "{name}"),
-            Atom::String(string) => write!(f, "\"{string}\""),
-            Atom::Number(number) => write!(f, "{number}"),
-            Atom::Float(float) => write!(f, "{float}"),
-        }
-    }
 }
 
 fn parse_name(input: &str) -> IResult<&str, String> {
@@ -50,8 +39,7 @@ fn parse_string(input: &str) -> IResult<&str, Atom> {
 }
 
 fn parse_number(input: &str) -> IResult<&str, Atom> {
-    let parser = recognize((opt(tag("-")), digit1));
-    map(parser, |it: &str| Atom::Number(it.parse().unwrap())).parse(input)
+    map(digit1, |it: &str| Atom::Number(it.parse().unwrap())).parse(input)
 }
 
 fn parse_float(input: &str) -> IResult<&str, Atom> {
@@ -94,33 +82,6 @@ pub enum Node {
         args: Vec<Atom>,
         body: Vec<Statement>,
     },
-}
-
-impl std::fmt::Display for Statement {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Statement::Declare { name, value } => write!(f, "{name} := {value}"),
-            Statement::Call { name, args } => {
-                let arg_strs: Vec<String> = args.iter().map(|arg| arg.to_string()).collect();
-                write!(f, "{name}({})", arg_strs.join(", "))
-            }
-        }
-    }
-}
-
-impl std::fmt::Display for Node {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Node::Function { name, args, body } => {
-                let arg_strs = args.iter().map(|arg| arg.to_string()).collect::<Vec<_>>();
-                write!(f, "fn {name}({}) {{", arg_strs.join(", "))?;
-                for statement in body {
-                    write!(f, "\n    {statement}")?;
-                }
-                write!(f, "\n}}")
-            }
-        }
-    }
 }
 
 fn parse_function(input: &str) -> IResult<&str, Node> {
