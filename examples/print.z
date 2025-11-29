@@ -1,4 +1,4 @@
 fn main() {
     name := "Odd-Harald"
-    println(name)
+    print(name)
 }
