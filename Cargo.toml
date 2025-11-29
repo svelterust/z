@@ -5,5 +5,5 @@ edition = "2024"
 
 [dependencies]
 nom = "8"
+qbe = "2.5"
 pico-args = "0.5"
-qbe = "2.5.1"
